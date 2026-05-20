@@ -1,17 +1,21 @@
-# zoho_exports/variables/
+# Zoho CRM Variables
 
-This folder is **auto-populated** by the daily GitHub Action.
+## API Limitation
 
-## Files written here
+CRM Variables **cannot be listed or retrieved** via the Zoho CRM REST API. There is no `GET /settings/variables` endpoint.
 
-| File | Contents |
-|---|---|
-| `all_variables.json` | All CRM variables (name, api_name, type, value where readable) |
+Variables are only accessible inside Deluge code via:
+- `zoho.crm.getOrgVariable("variable_name")` — org-level
+- `zoho.crm.getUserVariable("variable_name")` — user-level
 
-## Note
+## Known Usage Context
 
-Sensitive variable values may be masked by Zoho's API and will appear as `null` or empty strings. This is expected behaviour.
+Based on the architecture, variables in this org likely store:
+- Pipedream webhook endpoint URLs
+- Retell AI API key or agent IDs
+- Internal flags or shared counters
 
-## How to use with AI
+To view variables: **Setup > Developer Space > CRM Variables** in the Zoho CRM UI.
 
-Ask: *"What CRM variables are defined and what are their types?"*
+## Last Synced
+2026-05-20
