@@ -1,111 +1,85 @@
-# Zoho API Limitations - What Cannot Be Exported
+# Zoho API Limitations — What Cannot Be Exported
 
-This document records what the Zoho CRM API **cannot** pull as of 2026-05-20.
-
-The limitations below are split into two groups:
-- **Hard limits**: not retrievable by any API endpoint, must be manually exported.
-- **MCP-tool limits (resolved)**: previously assumed unreachable due to limits of the connected MCP wrapper, but the underlying Zoho REST API does expose them. The script in `scripts/pull_zoho.py` calls these endpoints directly via the REST API and bypasses the MCP wrapper.
+This document records what the Zoho CRM API **cannot** pull, as of 2026-05-20.
 
 ---
 
-## HARD LIMITS (manual export required)
+## 1. Deluge Function Source Code
 
-### 1. Deluge Function Source Code
+**Status: NOT AVAILABLE via API**
 
-**Status: NOT AVAILABLE via API.**
+The Zoho CRM API can list functions (name, ID, module) but **cannot return the actual Deluge source code**. The `GET /settings/functions/{id}` endpoint returns metadata only. Source lives exclusively in the Deluge editor UI.
 
-The Zoho CRM API can list functions (name, ID, module via `Functions__s` module records) but **cannot return the actual Deluge source code**. The source code lives exclusively in the Deluge editor UI and is not exposed over the API.
-
-*Workaround*: Manually export from `Setup > Automation > Functions` in the Zoho CRM web UI, or use the Zoho Deluge VS Code plugin for bulk pull. Place under `manual_exports/functions/`.
-
-### 2. Scheduled Functions (Schedulers)
-
-**Status: NOT AVAILABLE via API.**
-
-Zoho's scheduled functions (under `Setup > Automation > Schedules`) have no documented public API endpoint.
-
-*Workaround*: Document manually under `manual_exports/schedules/`.
-
-### 3. Custom Buttons
-
-**Status: NOT AVAILABLE via API.**
-
-Custom buttons are distinct from custom links (the latter ARE accessible via `/settings/link_names`). No public endpoint exposes custom buttons.
-
-*Workaround*: Document from `Setup > Customization > Modules > [Module] > Links and Buttons`. Place under `manual_exports/custom_buttons/`.
-
-### 4. Widget Source Code (Schedules Manager)
-
-**Status: NOT AVAILABLE via API.**
-
-The org has a custom widget: **Schedules Manager** (`api_name: Schedules_Manager`, `module_name: WebTab1`) hosted at a Zapps URL (`82b8dcde-48ce-431e-843b-0e5d73e2c195.zappsusercontent.com`). The widget source (HTML/CSS/JS) is hosted in Zoho Zapps and is **not retrievable** through the CRM API.
-
-*Workaround*: Access via the Zoho Developer console / Zapps builder. Place under `manual_exports/widgets/`.
-
-### 5. Tasks / Calls Fields
-
-**Status: NO_PERMISSION.**
-
-Calling `getFields` on the `Tasks` and `Calls` standard modules returns `{code: 'NO_PERMISSION', message: 'permission denied to access the module'}`. Workflow tasks for these modules return the same. This is an org-level permission setting, not an API limitation.
-
-*Workaround*: Adjust profile permissions, or document field structure manually.
-
-### 6. Blueprints / Approval Processes
-
-**Status: NOT EXPOSED via standard v7 endpoints.**
-
-The Zoho CRM API does not provide a clean endpoint to enumerate Blueprint state machines or Approval Process definitions.
-
-*Workaround*: Document manually if used by the org.
+*Workaround*: Manually export from `Setup > Automation > Functions`. See `manual_exports/functions/`.
 
 ---
 
-## MCP-TOOL LIMITS (resolved via direct REST API in pull_zoho.py)
+## 2. Scheduled Functions (Schedulers)
 
-These were previously believed unreachable but are accessible via the v7 REST API endpoints the script calls directly:
+**Status: NOT AVAILABLE via API**
 
-### A. Workflow Rule Actions and Conditions (per-rule detail)
+No public API endpoint. Schedule configurations are only visible in `Setup > Automation > Schedules`.
 
-**API status: AVAILABLE.** The endpoint `GET /settings/automation/workflow_rules/{id}` returns the full rule including criteria, instant_actions, and scheduled_actions. The script loops over the 31 rule IDs and writes the output to `workflows/workflow_rule_details_raw.json`.
+*Workaround*: Document manually from the UI.
 
-### B. Webhooks list
+---
 
-**API status: AVAILABLE.** `GET /settings/automation/webhooks` returns the webhooks list. The connected Workflow MCP tool returns an empty body for the org, consistent with the curated note that webhooks in this org are inline workflow actions rather than standalone webhooks. The script still calls the endpoint and writes the result to `webhooks/webhooks_raw.json`.
+## 3. Custom Buttons
 
-### C. CRM Variables
+**Status: NOT RELIABLY AVAILABLE via API**
 
-**API status: AVAILABLE.** `GET /settings/variables` returns CRM variables. The script writes them to `variables/variables_raw.json`.
+Custom links (`GET /settings/link_names`) are attempted by the sync script; custom **buttons** are a separate concept and not reliably exposed.
 
-### D. Field Updates (workflow actions)
+*Workaround*: Screenshot/document from `Setup > Customization > Modules > [Module] > Links and Buttons`.
 
-**API status: AVAILABLE.** The MCP tool `ZohoCRM_getFieldUpdates` returns workflow field-update actions; for example, on `Phone_Calls` the org has at least two field updates (`Update to Failed and Retried` setting Status to `Failed / Retried`, and `Set Status to In Progress`). The script tries `/settings/automation/actions/field_updates`, `/settings/field_updates`, and `/settings/automation/actions` and writes to `workflows/field_updates_raw.json`.
+---
 
-### E. Email Notifications (workflow actions)
+## 4. Widget Source Code (Schedules Manager)
 
-**API status: AVAILABLE.** Same shape as field updates. Script writes to `workflows/email_notifications_raw.json`.
+**Status: NOT AVAILABLE via API**
 
-### F. Custom Links
+The org has a custom widget: **Schedules Manager** (`api_name: Schedules_Manager`, `module_name: WebTab1`) hosted at `82b8dcde-48ce-431e-843b-0e5d73e2c195.zappsusercontent.com`. Source is not retrievable through the CRM API.
 
-**API status: AVAILABLE.** `GET /settings/link_names?module={api_name}` returns per-module custom links. Script writes to `custom_links/custom_links_raw.json`.
+*Workaround*: Access source via the Zoho Developer console or Zapps builder directly.
+
+---
+
+## 5. Workflow Rule Actions/Conditions (Full Detail)
+
+**Status: PARTIALLY AVAILABLE — will be complete after first successful sync**
+
+The list endpoint (`GET /settings/automation/workflow_rules`) returns trigger type and basic metadata only. However, the per-rule detail endpoint `GET /settings/automation/workflow_rules/{id}` **does** return criteria and actions (instant_actions, scheduled_actions) — including which function/webhook IDs fire.
+
+The sync script loops over all 31 rule IDs and calls the detail endpoint for each. Once the GitHub Action runs successfully, `workflows/workflow_rule_details_raw.json` will contain the full wiring.
+
+---
+
+## 6. Tasks / Calls Field Metadata
+
+**Status: NO_PERMISSION**
+
+Calling `getFields` on the `Tasks` and `Calls` standard activity modules returns `{code: 'NO_PERMISSION', message: 'permission denied to access the module'}`. These are system-restricted modules.
 
 ---
 
 ## Summary Table
 
-| Item | API Available | In sync script | Notes |
+| Item | API Available | Script Pulls It | Notes |
 |---|---|---|---|
-| Module metadata | YES | YES | `modules_raw.json` |
-| Field metadata (custom modules) | YES | YES | `fields_<Module>_raw.json` |
-| Field metadata (Tasks, Calls) | NO_PERMISSION | n/a | profile permission issue |
-| Workflow rule list | YES | YES | `workflow_rules_raw.json` |
-| Workflow rule actions/conditions | YES | YES | `workflow_rule_details_raw.json` |
-| Field updates | YES | YES (NEW) | `field_updates_raw.json` |
-| Email notifications | YES | YES (NEW) | `email_notifications_raw.json` |
-| Webhooks list | YES | YES | `webhooks_raw.json` (often empty in this org) |
-| Variables | YES | YES | `variables_raw.json` |
-| Custom links | YES | YES | `custom_links_raw.json` |
-| Custom buttons | NO | manual | Setup UI only |
-| Deluge function source | NO | manual | `manual_exports/functions/` |
-| Scheduled functions | NO | manual | `manual_exports/schedules/` |
-| Widget source code | NO | manual | `manual_exports/widgets/` |
-| Blueprints / Approval Processes | NO | manual | not standard endpoints |
+| Module metadata | ✅ | ✅ | `modules_raw.json` on first sync |
+| Field metadata (custom modules) | ✅ | ✅ | `fields_{Name}_raw.json` on first sync |
+| Field metadata (Tasks, Calls) | ⚠️ | ⚠️ | NO_PERMISSION |
+| Layouts per module | ✅ | ✅ | `layouts_{Name}_raw.json` on first sync |
+| Workflow rule list | ✅ | ✅ | `workflow_rules_raw.json` on first sync |
+| Workflow rule details (actions+criteria) | ✅ | ✅ | `workflow_rule_details_raw.json` on first sync |
+| Field update actions | ✅ | ✅ | `field_updates_raw.json` on first sync |
+| Email notification actions | ✅ | ✅ | `email_notifications_raw.json` on first sync |
+| Webhooks list | ✅ | ✅ | `webhooks_raw.json` on first sync (likely empty — none defined standalone in this org) |
+| CRM Variables | ✅ | ✅ | `variables_raw.json` on first sync |
+| Custom links | ✅ | ✅ | `custom_links_raw.json` on first sync |
+| Users + org info | ✅ | ✅ | `users_raw.json`, `org_info_raw.json` on first sync |
+| Custom buttons | ⚠️ | ❌ | Separate concept, no reliable endpoint |
+| Deluge function source | ❌ | ❌ | Not in API — manual export required |
+| Scheduled functions | ❌ | ❌ | Not in API — manual export required |
+| Widget source code | ❌ | ❌ | Not in API — manual export required |
+| Blueprints, Approvals, Blueprints | ❌ | ❌ | Not exposed via standard API |
