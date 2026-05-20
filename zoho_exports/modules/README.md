@@ -1,15 +1,33 @@
-# zoho_exports/modules/
+# Zoho CRM Module Exports
 
-This folder is **auto-populated** by the daily GitHub Action.
+This directory contains exported metadata from Zoho CRM modules.
 
-## Files written here
+## Files
 
-| File | Contents |
-|---|---|
-| `all_modules.json` | List of all CRM modules with metadata (api_name, display_label, module_name, etc.) |
-| `fields_{ModuleName}.json` | All fields for that module (data type, required, pick-list values, etc.) |
-| `layouts_{ModuleName}.json` | All layouts for that module |
+- `modules.json` — All modules with API names, labels, IDs, and visibility
+- `fields_Accounts.json` — Field metadata for Accounts (Employers)
+- Additional field files added on subsequent syncs
 
-## How to use with AI
+## Key Module Mapping
 
-Ask: *"What modules exist? What fields does the Leads module have?"*
+| API Name | Display Label | Type |
+|---|---|---|
+| Accounts | Employers | Standard |
+| Contacts | Agencies | Standard |
+| Deals | Service Profiles | Standard |
+| Providers | Providers | Custom (CustomModule1) |
+| Students | Students | Custom (CustomModule7) |
+| Service_Schedules | Service Schedules | Custom (CustomModule2) |
+| Phone_Calls | Phone Calls | Custom (CustomModule5) |
+| Programs | Programs | Custom (CustomModule4) |
+| Absentees | Absentees | Custom (CustomModule6) |
+| Phone_Numbers | Phone Numbers | Custom (CustomModule3) |
+| Students_X_Service_S | Students X Service S | Linking |
+| Agencies_X_Employers | Agencies X Employers | Linking |
+| IVR_Configs | IVR Configs | Subform of Programs |
+| Service_IVR_Configs | Service IVR Configs | Subform of Deals |
+| IVR_Hints | IVR Hints | Subform of Accounts |
+
+## Sync Info
+
+Last synced: 2026-05-20
