@@ -1,0 +1,51 @@
+name: Sync Zoho CRM Metadata
+
+on:
+  schedule:
+    # Daily at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allows manual trigger from the Actions tab
+
+jobs:
+  sync:
+    name: Pull Zoho CRM → Commit JSON
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run Zoho pull script
+        env:
+          ZOHO_CLIENT_ID:       ${{ secrets.ZOHO_CLIENT_ID }}
+          ZOHO_CLIENT_SECRET:   ${{ secrets.ZOHO_CLIENT_SECRET }}
+          ZOHO_REFRESH_TOKEN:   ${{ secrets.ZOHO_REFRESH_TOKEN }}
+          ZOHO_ACCOUNTS_DOMAIN: ${{ secrets.ZOHO_ACCOUNTS_DOMAIN }}
+          ZOHO_API_DOMAIN:      ${{ secrets.ZOHO_API_DOMAIN }}
+        run: python scripts/pull_zoho.py
+
+      - name: Commit & push changed files
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add zoho_exports/
+          # Only commit if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No changes detected — skipping commit."
+          else
+            git commit -m "chore: auto-sync Zoho CRM metadata [$(date -u '+%Y-%m-%d %H:%M')] UTC"
+            git push
+          fi
