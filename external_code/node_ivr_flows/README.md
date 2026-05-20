@@ -1,37 +1,56 @@
 # external_code/node_ivr_flows/
 
-This folder will hold the Node.js / Twilio IVR flow logic extracted from the source document **`XcellentStaffing Flows (Node.js).pdf`**.
-
-## Expected agencies (per discovery)
-
-- Yedei Chesed
-- Rayim
-- HHA Hamaspik
-- Dragon
-- Ahivim
+This folder holds the Node.js/Twilio IVR flow logic extracted from the XcellentStaffing system.
 
 ## Status
 
-⏳ Awaiting PDF source upload. Once the PDF is added to the repo, each agency flow should be extracted into its own file:
+**PDF not yet uploaded.** The source document (`XcellentStaffing Flows (Node.js).pdf`) was requested but did not arrive in the upload.
+Once uploaded, this folder will be populated with:
 
-```
-external_code/node_ivr_flows/
-  source.pdf                     # original document
-  yedei_chesed.js                # per-agency extracted flow
-  rayim.js
-  hha_hamaspik.js
-  dragon.js
-  ahivim.js
-  cross_reference.md             # mapping to Zoho fields (Phone_Calls, Service_Schedules, etc.)
-```
+| File | Agency |
+|---|---|
+| `yedei_chesed.js` | Yedei Chesed |
+| `rayim.js` | Rayim |
+| `hha_hamaspik.js` | HHA Hamaspik |
+| `dragon.js` | Dragon |
+| `ahivim.js` | Ahivim |
+| `cross_reference.md` | Full cross-reference of IVR variables against Zoho fields |
 
-## Cross-reference targets (Zoho side)
+## Cross-Reference Targets (once PDF arrives)
 
-When the flows are extracted, cross-reference each against:
+When the PDF is processed, each agency flow will be mapped against:
 
-- `Phone_Calls` module fields (especially `Status`, `Phone_Call_Response`, `Call_Count`, `Type`, `Pipedream_*_Trace_Id`, `test_rettell`, `Call_Summary`)
-- `Service_Schedules` fields (`Next_Clock_In`, `Next_Clock_Out`, `Job_Pin`, `Job_Code_Hash`, `Program_IVR_Number`, `IVR_Agency_Number`)
-- Retell / Pipedream / Twilio references documented in `zoho_exports/integrations/retell_pipedream_references.json`
-- Concepts referenced in source code: `ivr_call_status`, `crm_hints_object`, `current_employee_data`, `CallSid`, `clock_in` / `clock_out` logic
+### Phone_Calls fields
+- `Status` (Scheduled / In Progress / Done / Failed / Failed / Retried / Review / Busy)
+- `Type` (Clock In / Clock Out)
+- `Phone_Call_Response` — IVR response payload destination
+- `Call_Count` — retry counter
+- `Child_Phone_Call_Id` — retry chain link
+- `Pipedream_Trigger_Ivr_Trace_Id` / `Pipedream_Update_Zoho_Crm_Trace_Id`
+- `test_rettell` / `Call_Summary` — Retell AI fields
+- `Link_for_Twilio` / `Recording_from_Twilio` — Twilio legacy fields
 
-Also compare against the IVR flow files already in `github.com/kleegr/excellent/src/controller/ivrFlows/` (ahivim, hamspik3, hhaHamaspik, ppl, rayim, yedei) and the mega-controller at `src/controller/ivrInteraction.js`.
+### Service_Schedules fields
+- `Next_Clock_In` / `Next_Clock_Out` — date triggers for IVR calls
+- `Job_Pin` — PIN used during IVR authentication
+- `Job_Code_Hash` — hashed job code
+- `Program_IVR_Number` / `IVR_Agency_Number` — routing numbers
+- `Provider_Pin` / `Provider_Code` (from Providers module) — provider authentication
+
+### Integration references
+- `ivr_call_status` — IVR internal status variable
+- `crm_hints_object` — data passed from Zoho Accounts.IVR_Hints subform
+- `current_employee_data` — provider/student record snapshot passed into IVR
+- `CallSid` — Twilio call identifier
+- `clock_in` / `clock_out` — IVR flow branch logic
+
+### Retell/Pipedream references
+- Any `retell.*` SDK calls, agent IDs, webhook URLs
+- Any `pipedream` webhook URLs or trace ID writes
+- Twilio `twiml` response builders
+
+## Source Repository
+
+The live Node.js IVR system is in `kleegr/excellent`:
+- `src/controller/ivrFlows/` — per-agency playbooks
+- `src/controller/ivrInteraction.js` — main IVR controller (35KB)
